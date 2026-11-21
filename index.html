@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediksi Kecepatan Internet - Machine Learning</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; padding: 16px;
+        }
+        .card {
+            background: #ffffff; padding: 28px; border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+            width: 100%; max-width: 450px;
+        }
+        h2 { margin: 0 0 8px 0; color: #0f172a; text-align: center; font-size: 22px; }
+        .badge {
+            text-align: center; font-size: 12px; color: #334155;
+            background: #f1f5f9; border: 1px solid #e2e8f0;
+            padding: 8px; border-radius: 8px; margin-bottom: 20px;
+        }
+        label { display: block; margin-top: 14px; font-weight: 600; color: #334155; font-size: 14px; }
+        select, input {
+            width: 100%; padding: 11px; margin-top: 6px;
+            border: 1px solid #cbd5e1; border-radius: 8px;
+            font-size: 15px; background: #f8fafc;
+        }
+        select:focus, input:focus { outline: none; border-color: #2563eb; background: #fff; }
+        button {
+            width: 100%; margin-top: 22px; padding: 13px;
+            background: #2563eb; color: white; border: none;
+            border-radius: 8px; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: background 0.2s;
+        }
+        button:hover { background: #1d4ed8; }
+        .result-box {
+            margin-top: 22px; padding: 18px; background: #eff6ff;
+            border-left: 5px solid #2563eb; border-radius: 8px;
+            text-align: center; display: none;
+        }
+        .result-box h3 { margin: 0 0 6px 0; font-size: 15px; color: #1e3a8a; }
+        .speed { font-size: 38px; font-weight: 800; color: #2563eb; margin: 4px 0; }
+        .speed span { font-size: 16px; font-weight: 600; }
+        .result-box p { margin: 6px 0 0 0; font-size: 13px; color: #475569; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Prediksi Kecepatan Internet</h2>
+    <div class="badge" id="info-model">Melatih model Machine Learning...</div>
+
+    <label for="jaringan">Jenis Jaringan:</label>
+    <select id="jaringan">
+        <option value="1">WiFi</option>
+        <option value="0">Seluler (4G / 5G)</option>
+    </select>
+
+    <label for="jam">Jam Akses (0 - 23):</label>
+    <input type="number" id="jam" min="0" max="23" value="9">
+
+    <label for="sinyal">Kekuatan Sinyal dalam dBm (-95 lemah s/d -45 kuat):</label>
+    <input type="number" id="sinyal" min="-110" max="-30" value="-52">
+
+    <label for="user">Jumlah Perangkat Terhubung / User (1 - 20):</label>
+    <input type="number" id="user" min="1" max="50" value="2">
+
+    <button onclick="jalankanPrediksi()">Prediksi Kecepatan Sekarang</button>
+
+    <div class="result-box" id="kotak-hasil">
+        <h3 id="judul-hasil">Hasil Prediksi</h3>
+        <div class="speed"><span id="angka-kecepatan" style="font-size:38px;">0</span> <span>Mbps</span></div>
+        <p id="keterangan-hasil"></p>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. DATASET SIMULASI & TRAINING ML (GRADIENT DESCENT)
+    // ==========================================
+    let seed = 42;
+    function random() {
+        let x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+    }
+
+    const dataset = [];
+    for (let i = 0; i < 300; i++) {
+        const jaringan = random() > 0.5 ? 1 : 0;
+        const jam = Math.floor(random() * 24);
+        const sinyal = Math.floor(random() * 51) - 95;
+        const perangkat = Math.floor(random() * 15) + 1;
+
+        const dasar = jaringan === 1 ? 55.0 : 30.0;
+        const sibuk = (jam >= 19 && jam <= 22) ? -12.0 : 0.0;
+        const noise = (random() - 0.5) * 6;
+        let kecepatan = dasar + (sinyal + 100) * 1.1 + sibuk + (perangkat * -1.4) + noise;
+        kecepatan = Math.max(1.5, Math.min(150.0, kecepatan));
+
+        dataset.push([jaringan, jam, sinyal, perangkat, kecepatan]);
+    }
+
+    const latih = dataset.slice(0, 240);
+    const uji = dataset.slice(240);
+    let bobot = [0.0, 0.0, 0.0, 0.0];
+    let bias = 0.0;
+    const lr = 0.0001;
+
+    // Training 5.000 Epoch
+    for (let epoch = 0; epoch < 5000; epoch++) {
+        for (let k = 0; k < latih.length; k++) {
+            const [j, jm, s, p, y] = latih[k];
+            const fitur = [j, jm, s + 100, p];
+            const pred = bias + bobot[0]*fitur[0] + bobot[1]*fitur[1] + bobot[2]*fitur[2] + bobot[3]*fitur[3];
+            const err = pred - y;
+            bias -= lr * err;
+            for (let i = 0; i < 4; i++) {
+                bobot[i] -= lr * err * fitur[i];
+            }
+        }
+    }
+
+    function tebak(j, jm, s, p) {
+        const fitur = [j, jm, s + 100, p];
+        const hasil = bias + bobot[0]*fitur[0] + bobot[1]*fitur[1] + bobot[2]*fitur[2] + bobot[3]*fitur[3];
+        return Math.max(1.5, Math.min(150.0, hasil));
+    }
+
+    // Evaluasi MAE
+    let totalErr = 0;
+    for (let k = 0; k < uji.length; k++) {
+        const [j, jm, s, p, y] = uji[k];
+        totalErr += Math.abs(y - tebak(j, jm, s, p));
+    }
+    const mae = (totalErr / uji.length).toFixed(2);
+    document.getElementById("info-model").innerText =
+        `Model: Multiple Linear Regression | Error (MAE): ${mae} Mbps`;
+
+    // ==========================================
+    // 2. FUNGSI INTERAKSI TOMBOL PREDIKSI
+    // ==========================================
+    function jalankanPrediksi() {
+        const j = parseInt(document.getElementById("jaringan").value);
+        const jm = parseInt(document.getElementById("jam").value);
+        const s = parseInt(document.getElementById("sinyal").value);
+        const u = parseInt(document.getElementById("user").value);
+
+        const hasil = tebak(j, jm, s, u).toFixed(2);
+        const tipe = j === 1 ? "WiFi" : "Seluler (4G/5G)";
+
+        let kategori = "Lambat (Jaringan Padat / Sinyal Lemah)";
+        if (hasil >= 50) kategori = "Sangat Cepat (Lancar Streaming 4K & Gaming)";
+        else if (hasil >= 20) kategori = "Stabil (Cocok untuk Meeting & Browsing)";
+
+        document.getElementById("judul-hasil").innerText = `Hasil Prediksi Kecepatan (${tipe})`;
+        document.getElementById("angka-kecepatan").innerText = hasil;
+        document.getElementById("keterangan-hasil").innerText = kategori;
+        document.getElementById("kotak-hasil").style.display = "block";
+    }
+</script>
+
+</body>
+</html>
